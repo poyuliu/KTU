@@ -22,69 +22,78 @@ The 16S amplicon denoising method unbiased picks high-quality sequence variants 
 `digest` for generating MD5 hash
 
 
-## Practice
-sourcing KTU R functions
-```source("http://www.lifescipy.net/RcodeDB/FN_KTU.R") ```
+## Practice  
+install package from github:
+```
+library(devtools)
+install_github("poyuliu/KTU")
+```
 
-### Step 1 make k-mer DB
-Trim full length 16S DB to specific hypervariable regions
-Example: V3-V4 (341-805)
-Forward: **CCTACGGGNGGCWGCAG**
-Reverse: **GACTACHVGGGTATCTAATCC**
-output file: *SILVA_NR132_trimmed-sequence.fasta*
+sourcing KTU R library  
+~~source("http://www.lifescipy.net/RcodeDB/FN_KTU.R")~~  
+```
+library(KTU)
+```
+
+### Step 1 make k-mer DB (optional)  
+Trim full length 16S DB to specific hypervariable regions  
+Example: V3-V4 (341-805)  
+Forward: **CCTACGGGNGGCWGCAG**  
+Reverse: **GACTACHVGGGTATCTAATCC**  
+output file: *SILVA_NR132_trimmed-sequence.fasta*  
 ```
 trim.primer("/home/share/SILVA_NR132/SILVA_132_QIIME_release/rep_set/rep_set_16S_only/99/silva_132_99_16S.fna",
             forseq="CCTACGGGNGGCWGCAG",
             revseq="GACTACHVGGGTATCTAATCC",
             output.name="SILVA_NR132")
-```
+```  
 make and output DB
-input: *trimmed fasta file*
-output: *SILVA_132_V3V4_DB.RDS & SILVA_132_V3V4_TX.RDS*
-```
+input: *trimmed fasta file*  
+output: *SILVA_132_V3V4_DB.RDS & SILVA_132_V3V4_TX.RDS*  
+```  
 silva.db <- makektudb(input.fasta = "SILVA_NR132_trimmed-sequence.fasta",
                    input.taxa = "/home/share/SILVA_NR132/SILVA_132_QIIME_release/taxonomy/16S_only/99/taxonomy_7_levels.txt",
                    output.file = "SILVA_132_V3V4")
 
 ```
 
-### Step 2 run Klustering
-import ASV table (output from QIIME2 pipeline + DADA2 denoising + biom conversion) and remove original taxonomy column
+### Step 2 run Klustering (main algorithm)  
+import ASV table (output from QIIME2 pipeline + DADA2 denoising + biom conversion) and remove original taxonomy column  
 ```
 data <- read.delim("/home/poyuliu/NAS2/16S_SMI/16S_sarcopenia/feature-table_w_tax.txt")
 data <- data[,-ncol(data)]
-```
-*input representive-sequence fasta file*
-Parameters:
-  iterative PAM clustering steps: 5 and 10 (default:3 and 10)
-  CPU cores: 10 (default: 1)
+```  
+*input representive-sequence fasta file*  
+Parameters:  
+  iterative PAM clustering steps: 5 and 10 (default:3 and 10)  
+  CPU cores: 10 (default: 1)  
 ```
 kluster <- klustering(repseq = "dna-sequences.fasta",
                           feature.table = data,
                           write.fasta = TRUE,step = c(5,10),cores = 10)
-```
-Save results
+```  
+Save results  
 ```
 saveRDS(kluster,file="kluster.RDS")
 ```
 
-### Step 3 assign k-mer taxonomy
-**similar to RDP-classifier/Naîve Bayesian algorithm**
+### Step 3 assign k-mer taxonomy (optional)  
+**similar to RDP-classifier/Naîve Bayesian algorithm**  
 Read k-mer clustering result
 ```
 kluster <- readRDS("kluster.RDS")
-```
-run k-mer taxonomy assignment
-input DB: {name}_DB.RDS and {name}_TX.RDS
-input k-mer frequency table from previous result: *kluster$kmer.table*
+```  
+run k-mer taxonomy assignment  
+input DB: {name}_DB.RDS and {name}_TX.RDS  
+input k-mer frequency table from previous result: *kluster$kmer.table*  
 
 ```
 k.taxonomy <- kaxonomy(dbRDS = "SILVA_132_V3V4_DB.RDS",
                       taxaRDS = "SILVA_132_V3V4_TX.RDS",
                       kmer.table = kluster$kmer.table,
                       cores = 3)
-```
-Save results
+```  
+Save results  
 ```
 write.table(k.taxonomy,file = "Kaxonomy.tsv",sep="\t")
 ```
