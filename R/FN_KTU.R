@@ -328,3 +328,38 @@ kaxonomy <- function(dbRDS,taxaRDS,kmer.table,cos.cutff=0.95,consensus=0.8,candi
 }
 
 
+#' KTU evaluation
+#'
+#' Evaluate sequence similarity within KTUs
+#' @param klusterRDS klustering output RDS file
+#' @param ASVfasta representative ASV sequence fasta file
+#' @export
+KTUsim.eval <- function(klusterRDS,ASVfasta){
+  kluster <- readRDS(klusterRDS)
+  dna <- Biostrings::readDNAStringSet(ASVfasta,use.names = T)
+  dna <- lapply(dna, as.character)
+  dna <- sapply(dna, "[[", 1)
+  dna <- dna[match(names(kluster$clusters),names(dna))]
+
+  mean.simi <- c()
+  kn.stats <- table(kluster$clusters)
+  for(k in 1:length(kn.stats)){
+    if(kn.stats[k]>1){
+      dna.cluster.n <- dna[which(kluster$clusters==k)]
+      dna.cluster.cb <- combn(x = 1:length(dna.cluster.n),m = 2)
+      dna.seq.cb <- apply(dna.cluster.cb,2,function(x) dna.cluster.n[x])
+      within.simi <- c()
+      for(i in 1:ncol(dna.seq.cb)) within.simi[i] <- Biostrings::pid(Biostrings::pairwiseAlignment(dna.seq.cb[1,i],dna.seq.cb[2,i]))
+      mean.simi[k] <- mean(within.simi)
+    } else mean.simi[k] <- 100
+    print(paste("mean similarity within Kluster",k,"=",mean.simi[k],"% from",kn.stats[k],"seq features"))
+  }
+
+  g.mean.simi <- mean(mean.simi)
+  print(paste("Mean similarity of 'within KTU' of", length(kn.stats), "KTUs =",g.mean.simi))
+  hist(mean.simi)
+  return(list(eachmean=data.frame(kluster=1:length(kn.stats),similarity.pct=mean.simi,n.feature=kn.stats),globalmean=g.mean.simi))
+}
+
+
+
