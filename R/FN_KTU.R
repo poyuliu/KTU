@@ -342,6 +342,7 @@ KTUsim.eval <- function(klusterRDS,ASVfasta){
   dna <- dna[match(names(kluster$clusters),names(dna))]
 
   mean.simi <- c()
+  Ks <- c()
   kn.stats <- table(kluster$clusters)
   for(k in 1:length(kn.stats)){
     if(kn.stats[k]>1){
@@ -351,14 +352,20 @@ KTUsim.eval <- function(klusterRDS,ASVfasta){
       within.simi <- c()
       for(i in 1:ncol(dna.seq.cb)) within.simi[i] <- Biostrings::pid(Biostrings::pairwiseAlignment(dna.seq.cb[1,i],dna.seq.cb[2,i]))
       mean.simi[k] <- mean(within.simi)
-    } else mean.simi[k] <- 100
-    print(paste("mean similarity within Kluster",k,"=",mean.simi[k],"% from",kn.stats[k],"seq features"))
-  }
 
+      tetra <- tetra.freq(dna[which(kluster$clusters==k)],file = F)
+      Ks[k] <- mean(as.dist(1-coop::cosine(tetra)))
+    } else if(kn.stats[k]==1){
+      mean.simi[k] <- 100
+      Ks[k] <- NA
+    }
+    print(paste("mean similarity within Kluster",k,"=",mean.simi[k],"% from",kn.stats[k],"seq features; divergence =",Ks[k]))
+  }
   g.mean.simi <- mean(mean.simi)
-  print(paste("Mean similarity of 'within KTU' of", length(kn.stats), "KTUs =",g.mean.simi))
-  hist(mean.simi)
-  return(list(eachmean=data.frame(kluster=1:length(kn.stats),similarity.pct=mean.simi,n.feature=kn.stats),globalmean=g.mean.simi))
+  g.Ks <- mean(Ks[!is.na(Ks)])
+  print(paste("Mean similarity of 'within KTU' of", length(kn.stats), "KTUs =",g.mean.simi,"; Mean divergence within KTU =",g.Ks))
+  #hist(mean.simi)
+  return(list(eachmean=data.frame(kluster=1:length(kn.stats),similarity.pct=mean.simi,divergence=Ks,n.feature=as.data.frame(kn.stats)$Freq),globalmean=g.mean.simi,globaldivergence=g.Ks))
 }
 
 
