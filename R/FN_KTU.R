@@ -355,10 +355,6 @@ KTUsim.eval <- function(klusterRDS,ASVfasta){
 
       tetra <- tetra.freq(dna[which(kluster$clusters==k)],file = F)
       Ks[k] <- mean(as.dist(1-coop::cosine(tetra)))
-<<<<<<< HEAD
-      Ks[k] <- ifelse(Ks[k]>0,Ks[k],0)
-=======
->>>>>>> e1ea251e8d52e1583c84d9f6f314cf03ccec6058
     } else if(kn.stats[k]==1){
       mean.simi[k] <- 100
       Ks[k] <- NA
