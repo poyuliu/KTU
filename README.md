@@ -60,12 +60,12 @@ silva.db <- makektudb(input.fasta = "SILVA_NR132_trimmed-sequence.fasta",
 ### Step 2 run Klustering (main algorithm)  
 import ASV table (output from QIIME2 pipeline + DADA2 denoising + biom conversion) and remove original taxonomy column  
 ```
-data <- read.delim("/home/poyuliu/NAS2/16S_SMI/16S_sarcopenia/feature-table_w_tax.txt")
-data <- data[,-ncol(data)]
+data <- read.delim("feature-table_w_tax.txt") # import QIIME feature table with taxonomy annotation
+data <- data[,-ncol(data)] # remove taxonomy annotation column
 ```  
 *input representive-sequence fasta file*  
 Parameters:  
-  iterative PAM clustering steps: 5 and 10 (default:3 and 10)  
+  iterative PAM clustering steps: 5 and 10 (default)  
   CPU cores: 10 (default: 1)  
 ```
 kluster <- klustering(repseq = "dna-sequences.fasta",
@@ -98,6 +98,33 @@ Save results
 write.table(k.taxonomy,file = "Kaxonomy.tsv",sep="\t")
 ```
 
+### Step 4 evaluate Klustering results (optional)  
+Evaluate sequence similarity within KTUs,   
+```
+ktu_eval <- KTUsim.eval(klusterRDS = "kluster.RDS", ASVfasta = "dna-sequences.fasta")
+```
+and visualize by histogram:  
+1. how many ASVs are clustered in to a KTU  
+```
+histNdistri(histdata = ktu_eval$eachmean$n.feature,las=1,breaks=30,
+            coll = colset.d.5[1],
+            xlab.text = "# of ASVs / KTU",
+            legend.posit = "topright",legend.text = paste0(round(mean(ktu_eval$eachmean$n.feature),2)," ASVs/KTU on average"))
+```
+2. mean ASV similarity withing a KTU  
+```
+histNdistri(histdata = ktu_eval$eachmean$similarity.pct,las=1,breaks=30,
+            coll = colset.d.5[2],
+            xlab.text = "% of ASVs within KTU",
+            legend.posit = "topleft",legend.text = paste0("Mean similarity: ",round(ktu_eval$globalmean,2),"%"))
+```
+3. Divergence of ASVs within KTU  
+```
+histNdistri(histdata = ktu_eval$eachmean$divergence[!is.na(ktu_eval$eachmean$divergence)],las=1,breaks=30,
+            coll = colset.d.5[3],
+            xlab.text = "Divergence of ASVs within KTU",
+            legend.posit = "topright",legend.text = paste0("Mean divergence: ",round(ktu_eval$globaldivergence,2)))
+```
 
 ## Example
 [_Liu P.-Y., et al._ **Variations in Gut Microbiota of Siberian Flying Squirrels Correspond to Seasonal Phenological Changes in Their Hokkaido Subarctic Forest Ecosystem.** Microbial ecology 78, 223–231 (2019)](https://link.springer.com/article/10.1007/s00248-018-1278-x)

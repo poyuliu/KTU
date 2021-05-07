@@ -375,4 +375,17 @@ KTUsim.eval <- function(klusterRDS,ASVfasta){
 }
 
 
-
+#' plot KTU evaluations
+#'
+#' Evaluate sequence similarity within KTUs by histogram
+#' @param histdata KTU evaluation variable
+#' @param coll color for distribution curve
+#' @export
+histNdistri <- function(histdata,coll,xlab.text=NULL,legend.posit="topright",legend.text="",...){
+  h <- hist(histdata,main="",xlab=xlab.text,...)
+  xfit<-seq(min(histdata),max(histdata),length=100)
+  yfit<-dnorm(xfit,mean=mean(histdata),sd=sd(histdata))
+  yfit <- yfit*diff(h$mids[1:2])*length(histdata)
+  lines(xfit,yfit,type="l",lwd=2,col=coll,xlab="",ylab="",xaxt="n",yaxt="n",bty="n",xpd=T)
+  legend(x=legend.posit,legend = legend.text,bty="n")
+}
