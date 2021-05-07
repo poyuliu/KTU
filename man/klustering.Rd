@@ -8,8 +8,8 @@ klustering(
   repseq,
   feature.table = NULL,
   write.fasta = TRUE,
-  step = c(3, 10),
-  search.min = 10,
+  step = c(5, 10),
+  search.min = NULL,
   search.max = NULL,
   cores = 1
 )
@@ -21,11 +21,11 @@ klustering(
 
 \item{write.fasta}{(optional) write out a representative KTU sequence fasta file}
 
-\item{step}{Split searching range for optimal K. Two step searching process: large scale searching in the first round and smaller scale searching in the second round. Default is 'step=c(3,10)'.}
+\item{step}{Split searching range for optimal K. Two step searching process: large scale searching in the first round and smaller scale searching in the second round. Default is 'step=c(5,10)'.}
 
-\item{search.min}{The minimum K for searching, default 'search.min=10'}
+\item{search.min}{The minimum K for searching, default is 'NULL' = tip numbers at 0.03 height of cosine hierarchical clustering tree}
 
-\item{search.max}{The maximum K for searching, default is 'NULL' = max}
+\item{search.max}{The maximum K for searching, default is 'NULL' = tip numbers at 0.015 height of cosine hierarchical clustering tree}
 
 \item{cores}{Numbers of CPUs}
 }
