@@ -51,16 +51,16 @@ tetra.freq <- function(repseq,file=TRUE){
 #' @param repseq The fasta file path
 #' @param feature.table (optional) 'data.frame' formated ASV/OTU table
 #' @param write.fasta (optional) write out a representative KTU sequence fasta file
-#' @param step Split searching range for optimal K. Two step searching process: large scale searching in the first round and smaller scale searching in the second round. Default is 'step=c(3,10)'.
-#' @param search.min The minimum K for searching, default 'search.min=10'
-#' @param search.max The maximum K for searching, default is 'NULL' = max
+#' @param step Split searching range for optimal K. Two step searching process: large scale searching in the first round and smaller scale searching in the second round. Default is 'step=c(5,10)'.
+#' @param search.min The minimum K for searching, default is 'NULL' = tip numbers at 0.03 height of cosine hierarchical clustering tree
+#' @param search.max The maximum K for searching, default is 'NULL' = tip numbers at 0.015 height of cosine hierarchical clustering tree
 #' @param cores Numbers of CPUs
 #' @return KTU.table aggregated KTU table
 #' @return ReqSeq Representative KTU sequences
 #' @return kmer.table Tetranucleotide frequency table
 #' @return clusters K-clusters of input features
 #' @export
-klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(3,10),search.min=10,search.max=NULL,cores=1){
+klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(5,10),search.min=NULL,search.max=NULL,cores=1){
   require(foreach,quietly = T)
   rev_comp <- function(x){
     x.r <- paste0(rev(strsplit(x,"")[[1]]),collapse = "")
@@ -104,11 +104,14 @@ klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(3,10),s
   tetra.table <- prop.table(tetra.table,2)
   cos <- as.dist(1-coop::cosine(tetra.table))
 
+
   cl <- parallel::makeCluster(cores) #not to overload your computer
   doParallel::registerDoParallel(cl)
 
-  SS <- length(species)
-  if(is.null(search.max)) search.max <- SS-1 else search.max <- search.max
+  tree <- hclust(cos) #### 20210428 update ####
+  if(is.null(search.max)) search.max <- max(cutree(tree,h=0.015)) else search.max <- search.max #### 20210428 update ####
+  if(is.null(search.min)) search.min <- max(cutree(tree,h=0.03)) else search.min <- search.min #### 20210428 update ####
+
   steps <- ceiling(seq(search.min,search.max,length.out = step[1]))
   repeat{
     steps.update <- steps
@@ -121,7 +124,7 @@ klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(3,10),s
     steps <- ceiling(seq(k.best[2],k.best[1],length.out = step[1]))
     if(all(steps==steps.update)) break
   }
-  step <- ceiling(seq(k.best[2],k.best[1],length.out = step[2]))
+  steps <- unique(ceiling(seq(k.best[2],k.best[1],length.out = step[2]))) #### 20210428 correct typo ####
   rm(k.best)
   repeat{
     steps.update <- steps
@@ -129,7 +132,9 @@ klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(3,10),s
       temp.asw = cluster::pam(cos,k,do.swap = F,pamonce = 5)$silinfo$avg.width #calling a function
       temp.asw #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
     }
-    k.best <- steps.update[order(asw,decreasing = T)][1:2]
+    if(length(steps.update)>1){
+      k.best <- steps.update[order(asw,decreasing = T)][1:2]
+    } else k.best <- c(steps.update[1],steps.update[1])
     print(k.best)
     steps <- unique(ceiling(seq(k.best[2],k.best[1],length.out = step[2])))
     if(all(steps==steps.update)) break
