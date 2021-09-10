@@ -1,7 +1,7 @@
 Package: KTU
 Type: Package
 Title: “KTU” (K-mer Taxonomic Unit) algorithm improves biological relevance in microbiome associated study
-Version: 1.0.1
+Version: 1.0.2
 Author: Po-Yu Liu
 Maintainer: Po-Yu Liu <poyu.liu@gmail.com>
 Description: The 16S rDNA amplicon sequencing is widely implemented for microbiome associated studies. Microbiota feature picking algorithms for taxonomic identification and quantification are greatly renewing in recent years. The amplicon sequence variant (ASV) denoising algorithm of unbiased sequence picking replaces the OTU clustering methods. The ASV features can detect and distinguish the biological variations under the species OTU level (≧97% similarity). However, the quantification of single ASV among sequencing samples are sparse and less prevalent in the same biological groups. Here, we introduce a k-mer based, sequence alignment-free algorithm – “KTU” (K-mer Taxonomic Unit) for re-clustering ASVs into taxonomic units with more biological relevance.
