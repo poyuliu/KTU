@@ -31,7 +31,7 @@ library(devtools)
 install_github("poyuliu/KTU")
 ```
 
-~~sourcing KTU R library~~
+sourcing KTU R library  
 ~~source("http://www.lifescipy.net/RcodeDB/FN_KTU.R")~~  
 ```
 library(KTU)
