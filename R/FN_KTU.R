@@ -34,8 +34,8 @@ tetra.freq <- function(repseq,file=TRUE){
   #full length ASV
   for(i in 1:256){
     for(j in 1:length(species)){
-      single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]]))>0,grep(tetra.mer[i],species[[j]][[1]]),0)
-      single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]]))>0,grep(tetra.mer[i],species[[j]][[2]]),0)
+      single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
+      single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
       tetra.table[i,j] <- (single.forward+single.reverse)
     }
   }
@@ -95,8 +95,8 @@ klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(5,10),s
   #full length ASV
   for(i in 1:256){
     for(j in 1:length(species)){
-      single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]]))>0,grep(tetra.mer[i],species[[j]][[1]]),0)
-      single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]]))>0,grep(tetra.mer[i],species[[j]][[2]]),0)
+      single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
+      single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
       tetra.table[i,j] <- (single.forward+single.reverse)
     }
   }
@@ -250,8 +250,8 @@ makektudb <- function(input.fasta,input.taxa,output.file=NULL){
 
   for(i in 1:256){
     for(j in 1:length(species)){
-      single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]]))>0,grep(tetra.mer[i],species[[j]][[1]]),0)
-      single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]]))>0,grep(tetra.mer[i],species[[j]][[2]]),0)
+      single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
+      single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
       tetra.table[i,j] <- (single.forward+single.reverse)
     }
   }
