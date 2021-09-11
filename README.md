@@ -14,14 +14,14 @@ The 16S amplicon denoising method unbiased picks high-quality sequence variants 
 What's new in Version 1.0.2: correct the algorithm core of kmer-frequency calculation
 
 ### Required packages:
-`Biostrings` for parsing DNA sequence (fasta format) files
-`stringr` for calculating k-mer frequency
-`coop` for measuring cosine similarity of k-mer frequency
-`cluster` for conducting PAM/K-medoids clustering
-`parallel` for parallel computing
-`foreach` for parallel for-loop computing
-`doParallel` for parallel computing
-`digest` for generating MD5 hash
+`Biostrings` for parsing DNA sequence (fasta format) files  
+`stringr` for calculating k-mer frequency  
+`coop` for measuring cosine similarity of k-mer frequency  
+`cluster` for conducting PAM/K-medoids clustering  
+`parallel` for parallel computing  
+`foreach` for parallel for-loop computing  
+`doParallel` for parallel computing  
+`digest` for generating MD5 hash  
 
 
 ## Practice  
