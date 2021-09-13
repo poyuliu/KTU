@@ -4,12 +4,14 @@
 \alias{makektudb}
 \title{Build KTU taxonomy assignment database by tetranucleotide frequency table}
 \usage{
-makektudb(input.fasta, input.taxa, output.file = NULL)
+makektudb(input.fasta, input.taxa, pscore = TRUE, output.file = NULL)
 }
 \arguments{
 \item{input.fasta}{input database fasta file (trimmed)}
 
 \item{input.taxa}{input database taxonomy file}
+
+\item{pscore}{pscore=TRUE/FLASE: using k-mer present scores (tetranucleotide features 0:absent; 1:present in one direction; 2:present in both direction of a sequence)/k-mer frequency}
 
 \item{output.file}{(optional) the directory for output RDS format file}
 }

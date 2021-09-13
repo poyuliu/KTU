@@ -6,6 +6,7 @@
 \usage{
 klustering(
   repseq,
+  pscore = TRUE,
   feature.table = NULL,
   write.fasta = TRUE,
   step = c(5, 10),
@@ -16,6 +17,8 @@ klustering(
 }
 \arguments{
 \item{repseq}{The fasta file path}
+
+\item{pscore}{pscore=TRUE/FLASE: using k-mer present scores (tetranucleotide features 0:absent; 1:present in one direction; 2:present in both direction of a sequence)/k-mer frequency}
 
 \item{feature.table}{(optional) 'data.frame' formated ASV/OTU table}
 
@@ -30,11 +33,11 @@ klustering(
 \item{cores}{Numbers of CPUs}
 }
 \value{
-KTU.table aggregated KTU table
+KTU.table Aggregated KTU table
 
 ReqSeq Representative KTU sequences
 
-kmer.table Tetranucleotide frequency table
+kmer.table Tetranucleotide present score table or tetranucleotide frequency table
 
 clusters K-clusters of input features
 }

@@ -49,18 +49,19 @@ tetra.freq <- function(repseq,file=TRUE){
 #'
 #' K-mer taxonomic unit clustering
 #' @param repseq The fasta file path
+#' @param pscore pscore=TRUE/FLASE: using k-mer present scores (tetranucleotide features 0:absent; 1:present in one direction; 2:present in both direction of a sequence)/k-mer frequency
 #' @param feature.table (optional) 'data.frame' formated ASV/OTU table
 #' @param write.fasta (optional) write out a representative KTU sequence fasta file
 #' @param step Split searching range for optimal K. Two step searching process: large scale searching in the first round and smaller scale searching in the second round. Default is 'step=c(5,10)'.
 #' @param search.min The minimum K for searching, default is 'NULL' = tip numbers at 0.03 height of cosine hierarchical clustering tree
 #' @param search.max The maximum K for searching, default is 'NULL' = tip numbers at 0.015 height of cosine hierarchical clustering tree
 #' @param cores Numbers of CPUs
-#' @return KTU.table aggregated KTU table
+#' @return KTU.table Aggregated KTU table
 #' @return ReqSeq Representative KTU sequences
-#' @return kmer.table Tetranucleotide frequency table
+#' @return kmer.table Tetranucleotide present score table or tetranucleotide frequency table
 #' @return clusters K-clusters of input features
 #' @export
-klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(5,10),search.min=NULL,search.max=NULL,cores=1){
+klustering <- function(repseq,pscore=TRUE,feature.table=NULL,write.fasta=TRUE,step=c(5,10),search.min=NULL,search.max=NULL,cores=1){
   require(foreach,quietly = T)
   rev_comp <- function(x){
     x.r <- paste0(rev(strsplit(x,"")[[1]]),collapse = "")
@@ -93,11 +94,21 @@ klustering <- function(repseq,feature.table=NULL,write.fasta=TRUE,step=c(5,10),s
   rownames(tetra.table) <- tetra.mer
 
   #full length ASV
-  for(i in 1:256){
-    for(j in 1:length(species)){
-      single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
-      single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
-      tetra.table[i,j] <- (single.forward+single.reverse)
+  if(isTRUE(pscore)){
+    for(i in 1:256){
+      for(j in 1:length(species)){
+        single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]])) > 0, grep(tetra.mer[i], species[[j]][[1]]),0)
+        single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]])) > 0, grep(tetra.mer[i], species[[j]][[2]]),0)
+        tetra.table[i,j] <- (single.forward+single.reverse)
+      }
+    }
+  } else if(isTRUE(pscore)){
+    for(i in 1:256){
+      for(j in 1:length(species)){
+        single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
+        single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
+        tetra.table[i,j] <- (single.forward+single.reverse)
+      }
     }
   }
   colnames(tetra.table) <- asv.id
@@ -222,9 +233,10 @@ trim.primer <- function(fasta,forseq,revseq,output.name=NULL,progress=TRUE){
 #' make KTU db
 #' @param input.fasta input database fasta file (trimmed)
 #' @param input.taxa input database taxonomy file
+#' @param pscore pscore=TRUE/FLASE: using k-mer present scores (tetranucleotide features 0:absent; 1:present in one direction; 2:present in both direction of a sequence)/k-mer frequency
 #' @param output.file (optional) the directory for output RDS format file
 #' @export
-makektudb <- function(input.fasta,input.taxa,output.file=NULL){
+makektudb <- function(input.fasta,input.taxa,pscore=TRUE,output.file=NULL){
   rev_comp <- function(x){
     x.r <- paste0(rev(strsplit(x,"")[[1]]),collapse = "")
     x.r <- gsub("A","1",x.r);x.r <- gsub("T","2",x.r);x.r <- gsub("C","3",x.r);x.r <- gsub("G","4",x.r)
@@ -248,11 +260,21 @@ makektudb <- function(input.fasta,input.taxa,output.file=NULL){
   tetra.table <- matrix(nrow=256,ncol=length(species))
   rownames(tetra.table) <- tetra.mer
 
-  for(i in 1:256){
-    for(j in 1:length(species)){
-      single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
-      single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
-      tetra.table[i,j] <- (single.forward+single.reverse)
+  if(isTRUE(pscore)){
+    for(i in 1:256){
+      for(j in 1:length(species)){
+        single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]])) > 0, grep(tetra.mer[i], species[[j]][[1]]),0)
+        single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]])) > 0, grep(tetra.mer[i], species[[j]][[2]]),0)
+        tetra.table[i,j] <- (single.forward+single.reverse)
+      }
+    }
+  } else if(isTRUE(pscore)){
+    for(i in 1:256){
+      for(j in 1:length(species)){
+        single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
+        single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
+        tetra.table[i,j] <- (single.forward+single.reverse)
+      }
     }
   }
 
