@@ -9,5 +9,5 @@ Description: The 16S rDNA amplicon sequencing is widely implemented for microbio
 License: none
 Encoding: UTF-8
 LazyData: true
-Imports: Biostrings, coop, cluster, parallel, foreach, doParallel, digest, stringr
+Imports: Biostrings, coop, cluster, parallel, foreach, doParallel, digest, S4Vectors
 RoxygenNote: 7.1.1

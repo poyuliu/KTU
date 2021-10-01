@@ -4,7 +4,7 @@
 \alias{makektudb}
 \title{Build KTU taxonomy assignment database by tetranucleotide frequency table}
 \usage{
-makektudb(input.fasta, input.taxa, pscore = TRUE, output.file = NULL)
+makektudb(input.fasta, input.taxa, pscore = FALSE, output.file = NULL)
 }
 \arguments{
 \item{input.fasta}{input database fasta file (trimmed)}

@@ -4,7 +4,7 @@
 \alias{tetra.freq}
 \title{Generate a kmer table from representative sequences}
 \usage{
-tetra.freq(repseq, file = TRUE)
+tetra.freq(repseq, pscore = FALSE, file = TRUE)
 }
 \arguments{
 \item{repseq}{The fasta file path}

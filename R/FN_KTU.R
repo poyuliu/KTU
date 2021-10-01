@@ -5,42 +5,57 @@
 #' @param file logical, default is TRUE, loading DNA sequences from file. if 'file=FALSE', the 'repseq' is loaded from object.
 #' @return A 256 tetranucleotide combinations frequency table
 #' @export
-tetra.freq <- function(repseq,file=TRUE){
-  rev_comp <- function(x){
-    x.r <- paste0(rev(strsplit(x,"")[[1]]),collapse = "")
-    x.r <- gsub("A","1",x.r);x.r <- gsub("T","2",x.r);x.r <- gsub("C","3",x.r);x.r <- gsub("G","4",x.r)
-    x.r <- gsub("1","T",x.r);x.r <- gsub("2","A",x.r);x.r <- gsub("3","G",x.r);x.r <- gsub("4","C",x.r)
+tetra.freq <- function (repseq, pscore = FALSE, file = TRUE)
+{
+  rev_comp <- function(x) {
+    x.r <- paste0(rev(strsplit(x, "")[[1]]), collapse = "")
+    x.r <- gsub("A", "1", x.r)
+    x.r <- gsub("T", "2", x.r)
+    x.r <- gsub("C", "3", x.r)
+    x.r <- gsub("G", "4", x.r)
+    x.r <- gsub("1", "T", x.r)
+    x.r <- gsub("2", "A", x.r)
+    x.r <- gsub("3", "G", x.r)
+    x.r <- gsub("4", "C", x.r)
     return(x.r)
   }
-  readseq <- function(seq){
+  readseq <- function(seq) {
     x <- seq
-    x <- paste0(x,collapse = "")
+    x <- paste0(x, collapse = "")
     x.r <- rev_comp(x)
-    return(list(x,x.r))
+    return(list(x, x.r))
   }
-  if(isTRUE(file)){
-    scaffolds = Biostrings::readDNAStringSet(filepath = repseq, use.names = T)
-  } else scaffolds = Biostrings::DNAStringSet(repseq)
+  if (isTRUE(file)) {
+    scaffolds = Biostrings::readDNAStringSet(filepath = repseq,
+                                             use.names = T)
+  }
+  else scaffolds = Biostrings::DNAStringSet(repseq)
   asv.id <- scaffolds@ranges@NAMES
   species <- lapply(scaffolds, function(x) readseq(as.character(x)))
-
-  DNA <- c("A","T","C","G")
-  tetra.mer <- expand.grid(DNA,DNA,DNA,DNA)
-  tetra.mer <- do.call(paste0,tetra.mer)
-
-  tetra.table <- matrix(nrow=256,ncol=length(species))
+  DNA <- c("A", "T", "C", "G")
+  tetra.mer <- expand.grid(DNA, DNA, DNA, DNA)
+  tetra.mer <- do.call(paste0, tetra.mer)
+  tetra.table <- matrix(nrow = 256, ncol = length(species))
   rownames(tetra.table) <- tetra.mer
-
-  #full length ASV
-  for(i in 1:256){
-    for(j in 1:length(species)){
-      single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
-      single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
-      tetra.table[i,j] <- (single.forward+single.reverse)
+  if (isTRUE(pscore)) {
+    for (i in 1:256) {
+      for (j in 1:length(species)) {
+        single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]])) > 0, grep(tetra.mer[i],species[[j]][[1]]), 0)
+        single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]])) > 0, grep(tetra.mer[i],species[[j]][[2]]), 0)
+        tetra.table[i, j] <- (single.forward + single.reverse)
+      }
+    }
+  }
+  else if (!isTRUE(pscore)) {
+    for (j in 1:length(species)) {
+      #print(j)
+      single.forward <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][1]))))
+      single.reverse <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][2]))))
+      tetra.table[, j] <- (single.forward + single.reverse)
     }
   }
   colnames(tetra.table) <- asv.id
-  tetra.table <- prop.table(tetra.table,2)
+  tetra.table <- prop.table(tetra.table, 2)
   return(tetra.table)
 }
 
@@ -61,125 +76,137 @@ tetra.freq <- function(repseq,file=TRUE){
 #' @return kmer.table Tetranucleotide present score table or tetranucleotide frequency table
 #' @return clusters K-clusters of input features
 #' @export
-klustering <- function(repseq,pscore=TRUE,feature.table=NULL,write.fasta=TRUE,step=c(5,10),search.min=NULL,search.max=NULL,cores=1){
-  require(foreach,quietly = T)
-  rev_comp <- function(x){
-    x.r <- paste0(rev(strsplit(x,"")[[1]]),collapse = "")
-    x.r <- gsub("A","1",x.r);x.r <- gsub("T","2",x.r);x.r <- gsub("C","3",x.r);x.r <- gsub("G","4",x.r)
-    x.r <- gsub("1","T",x.r);x.r <- gsub("2","A",x.r);x.r <- gsub("3","G",x.r);x.r <- gsub("4","C",x.r)
+klustering <- function (repseq, pscore = FALSE, feature.table = NULL, write.fasta = TRUE,
+                        step = c(5, 10), search.min = NULL, search.max = NULL, cores = 1)
+{
+  require(foreach, quietly = T)
+  rev_comp <- function(x) {
+    x.r <- paste0(rev(strsplit(x, "")[[1]]), collapse = "")
+    x.r <- gsub("A", "1", x.r)
+    x.r <- gsub("T", "2", x.r)
+    x.r <- gsub("C", "3", x.r)
+    x.r <- gsub("G", "4", x.r)
+    x.r <- gsub("1", "T", x.r)
+    x.r <- gsub("2", "A", x.r)
+    x.r <- gsub("3", "G", x.r)
+    x.r <- gsub("4", "C", x.r)
     return(x.r)
   }
-  readseq <- function(seq){
+  readseq <- function(seq) {
     x <- seq
-    x <- paste0(x,collapse = "")
+    x <- paste0(x, collapse = "")
     x.r <- rev_comp(x)
-    return(list(x,x.r))
+    return(list(x, x.r))
   }
-  aggregate2df <- function(data,groups,FUN){
-    agg.data <- aggregate(data,list(groups),FUN)
-    rownames(agg.data) <- agg.data[,1]
-    agg.data <- as.data.frame(t(agg.data[,-1]))
+  aggregate2df <- function(data, groups, FUN) {
+    agg.data <- aggregate(data, list(groups), FUN)
+    rownames(agg.data) <- agg.data[, 1]
+    agg.data <- as.data.frame(t(agg.data[, -1]))
     return(agg.data)
   }
-
-  scaffolds = Biostrings::readDNAStringSet(filepath = repseq, use.names = T)
+  scaffolds = Biostrings::readDNAStringSet(filepath = repseq,
+                                           use.names = T)
   asv.id <- scaffolds@ranges@NAMES
   species <- lapply(scaffolds, function(x) readseq(as.character(x)))
-
-  DNA <- c("A","T","C","G")
-  tetra.mer <- expand.grid(DNA,DNA,DNA,DNA)
-  tetra.mer <- do.call(paste0,tetra.mer)
-
-  tetra.table <- matrix(nrow=256,ncol=length(species))
+  DNA <- c("A", "T", "C", "G")
+  tetra.mer <- expand.grid(DNA, DNA, DNA, DNA)
+  tetra.mer <- do.call(paste0, tetra.mer)
+  tetra.table <- matrix(nrow = 256, ncol = length(species))
   rownames(tetra.table) <- tetra.mer
-
-  #full length ASV
-  if(isTRUE(pscore)){
-    for(i in 1:256){
-      for(j in 1:length(species)){
-        single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]])) > 0, grep(tetra.mer[i], species[[j]][[1]]),0)
-        single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]])) > 0, grep(tetra.mer[i], species[[j]][[2]]),0)
-        tetra.table[i,j] <- (single.forward+single.reverse)
+  if (isTRUE(pscore)) {
+    for (i in 1:256) {
+      for (j in 1:length(species)) {
+        single.forward <- ifelse(length(grep(tetra.mer[i],species[[j]][[1]])) > 0, grep(tetra.mer[i],species[[j]][[1]]), 0)
+        single.reverse <- ifelse(length(grep(tetra.mer[i],species[[j]][[2]])) > 0, grep(tetra.mer[i],species[[j]][[2]]), 0)
+        tetra.table[i, j] <- (single.forward + single.reverse)
       }
     }
-  } else if(isTRUE(pscore)){
-    for(i in 1:256){
-      for(j in 1:length(species)){
-        single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
-        single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
-        tetra.table[i,j] <- (single.forward+single.reverse)
-      }
+  }
+  else if (!isTRUE(pscore)) {
+    for (j in 1:length(species)) {
+      #print(j)
+      single.forward <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][1]))))
+      single.reverse <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][2]))))
+      tetra.table[, j] <- (single.forward + single.reverse)
     }
   }
   colnames(tetra.table) <- asv.id
-  tetra.table <- prop.table(tetra.table,2)
-  cos <- as.dist(1-coop::cosine(tetra.table))
-
-
-  cl <- parallel::makeCluster(cores) #not to overload your computer
+  tetra.table <- prop.table(tetra.table, 2)
+  cos <- as.dist(1 - coop::cosine(tetra.table))
+  cl <- parallel::makeCluster(cores)
   doParallel::registerDoParallel(cl)
-
-  tree <- hclust(cos) #### 20210428 update ####
-  if(is.null(search.max)) search.max <- max(cutree(tree,h=0.015)) else search.max <- search.max #### 20210428 update ####
-  if(is.null(search.min)) search.min <- max(cutree(tree,h=0.03)) else search.min <- search.min #### 20210428 update ####
-
-  steps <- ceiling(seq(search.min,search.max,length.out = step[1]))
-  repeat{
+  tree <- hclust(cos)
+  if (is.null(search.max))
+    search.max <- max(cutree(tree, h = 0.015))
+  else search.max <- search.max
+  if (is.null(search.min))
+    search.min <- max(cutree(tree, h = 0.03))
+  else search.min <- search.min
+  print(paste("Searching range:",search.min,"to",search.max))
+  steps <- ceiling(seq(search.min, search.max, length.out = step[1]))
+  repeat {
     steps.update <- steps
-    asw <- foreach::foreach(k=steps.update, .combine=c) %dopar% {
-      temp.asw = cluster::pam(cos,k,do.swap = F,pamonce = 5)$silinfo$avg.width #calling a function
-      temp.asw #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
-    }
-    k.best <- steps.update[order(asw,decreasing = T)][1:2]
+    asw <- foreach::foreach(k = steps.update, .combine = c) %dopar%
+      {
+        temp.asw = cluster::pam(cos, k, do.swap = F,
+                                pamonce = 5)$silinfo$avg.width
+        temp.asw
+      }
+    k.best <- steps.update[order(asw, decreasing = T)][1:2]
     print(k.best)
-    steps <- ceiling(seq(k.best[2],k.best[1],length.out = step[1]))
-    if(all(steps==steps.update)) break
+    steps <- ceiling(seq(k.best[2], k.best[1], length.out = step[1]))
+    if (all(steps == steps.update))
+      break
   }
-  steps <- unique(ceiling(seq(k.best[2],k.best[1],length.out = step[2]))) #### 20210428 correct typo ####
+  steps <- unique(ceiling(seq(k.best[2], k.best[1], length.out = step[2])))
   rm(k.best)
-  repeat{
+  repeat {
     steps.update <- steps
-    asw <- foreach::foreach(k=steps.update, .combine=c) %dopar% {
-      temp.asw = cluster::pam(cos,k,do.swap = F,pamonce = 5)$silinfo$avg.width #calling a function
-      temp.asw #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
+    asw <- foreach::foreach(k = steps.update, .combine = c) %dopar%
+      {
+        temp.asw = cluster::pam(cos, k, do.swap = F,
+                                pamonce = 5)$silinfo$avg.width
+        temp.asw
+      }
+    if (length(steps.update) > 1) {
+      k.best <- steps.update[order(asw, decreasing = T)][1:2]
     }
-    if(length(steps.update)>1){
-      k.best <- steps.update[order(asw,decreasing = T)][1:2]
-    } else k.best <- c(steps.update[1],steps.update[1])
+    else k.best <- c(steps.update[1], steps.update[1])
     print(k.best)
-    steps <- unique(ceiling(seq(k.best[2],k.best[1],length.out = step[2])))
-    if(all(steps==steps.update)) break
+    steps <- unique(ceiling(seq(k.best[2], k.best[1], length.out = step[2])))
+    if (all(steps == steps.update))
+      break
   }
   k.best <- steps.update[which.max(asw)]
-  print(paste("Best KTU #:",k.best))
-  parallel::stopCluster(cl) #stop cluster
-
-
-  kms <- cluster::pam(cos,k.best,do.swap = F,pamonce = 5)
-  #centoid rep seq
+  print(paste("Best KTU #:", k.best))
+  parallel::stopCluster(cl)
+  kms <- cluster::pam(cos, k.best, do.swap = F, pamonce = 5)
   centroid <- kms$id.med
-  crepseq <- sapply(species[centroid], '[[',1)
-  #names(crepseq) <- paste0("KTU",sprintf("%0004i",1:length(centroid)))
-  for(i in 1:length(centroid)) names(crepseq)[i] <- digest::digest(crepseq[i],algo = "md5",serialize = F)
-
-  #kmer table
-  kmer.table <- data.frame(tetra.table[,centroid])
+  crepseq <- sapply(species[centroid], "[[", 1)
+  for (i in 1:length(centroid)) names(crepseq)[i] <- digest::digest(crepseq[i],
+                                                                    algo = "md5", serialize = F)
+  kmer.table <- data.frame(tetra.table[, centroid])
   colnames(kmer.table) <- names(crepseq)
-
-  if(isTRUE(write.fasta)){
-    repseq <- matrix(rbind(paste0(">",names(crepseq)),crepseq),ncol=1)
-    write(repseq,file = "ktu-sequence.fasta")
+  if (isTRUE(write.fasta)) {
+    repseq <- matrix(rbind(paste0(">", names(crepseq)),
+                           crepseq), ncol = 1)
+    write(repseq, file = "ktu-sequence.fasta")
   }
-
-  if(!is.null(feature.table)){
-    feature.table <- feature.table[match(asv.id,feature.table[,1],nomatch = 0),]
-    otu <- feature.table[,-1]
-    ktu <- as.data.frame(t(aggregate2df(otu,kms$clustering,sum)))
+  if (!is.null(feature.table)) {
+    feature.table <- feature.table[match(asv.id, feature.table[,
+                                                               1], nomatch = 0), ]
+    otu <- feature.table[, -1]
+    ktu <- as.data.frame(t(aggregate2df(otu, kms$clustering,
+                                        sum)))
     rownames(ktu) <- names(crepseq)
     colnames(ktu) <- colnames(otu)
-    return(list(KTU.table=ktu, ReqSeq=crepseq, kmer.table=kmer.table, clusters=kms$clustering))
-  } else return(list(ReqSeq=crepseq, kmer.table=kmer.table, clusters=kms$clustering))
+    return(list(KTU.table = ktu, ReqSeq = crepseq, kmer.table = kmer.table,
+                clusters = kms$clustering))
+  }
+  else return(list(ReqSeq = crepseq, kmer.table = kmer.table,
+                   clusters = kms$clustering))
 }
+
 
 
 #' Prepare KTU taxonomy assignment database by trimming primers
@@ -236,7 +263,7 @@ trim.primer <- function(fasta,forseq,revseq,output.name=NULL,progress=TRUE){
 #' @param pscore pscore=TRUE/FLASE: using k-mer present scores (tetranucleotide features 0:absent; 1:present in one direction; 2:present in both direction of a sequence)/k-mer frequency
 #' @param output.file (optional) the directory for output RDS format file
 #' @export
-makektudb <- function(input.fasta,input.taxa,pscore=TRUE,output.file=NULL){
+makektudb <- function(input.fasta,input.taxa,pscore=FALSE,output.file=NULL){
   rev_comp <- function(x){
     x.r <- paste0(rev(strsplit(x,"")[[1]]),collapse = "")
     x.r <- gsub("A","1",x.r);x.r <- gsub("T","2",x.r);x.r <- gsub("C","3",x.r);x.r <- gsub("G","4",x.r)
@@ -268,13 +295,12 @@ makektudb <- function(input.fasta,input.taxa,pscore=TRUE,output.file=NULL){
         tetra.table[i,j] <- (single.forward+single.reverse)
       }
     }
-  } else if(isTRUE(pscore)){
-    for(i in 1:256){
-      for(j in 1:length(species)){
-        single.forward <- stringr::str_count(species[[j]][1],tetra.mer[i])
-        single.reverse <- stringr::str_count(species[[j]][2],tetra.mer[i])
-        tetra.table[i,j] <- (single.forward+single.reverse)
-      }
+  } else if (!isTRUE(pscore)) {
+    for (j in 1:length(species)) {
+      #print(j)
+      single.forward <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][1]))))
+      single.reverse <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][2]))))
+      tetra.table[, j] <- (single.forward + single.reverse)
     }
   }
 

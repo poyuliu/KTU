@@ -6,7 +6,7 @@
 \usage{
 klustering(
   repseq,
-  pscore = TRUE,
+  pscore = FALSE,
   feature.table = NULL,
   write.fasta = TRUE,
   step = c(5, 10),
