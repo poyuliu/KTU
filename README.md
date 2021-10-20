@@ -13,7 +13,9 @@ The 16S amplicon denoising method unbiased picks high-quality sequence variants 
 **Latest updates:** 2021/10/20  
 What's new in Version 1.0.2:  
 1. correct the algorithm core of kmer-frequency calculation  
-2. add kmer clustering options: kmer frequency (default) or kmer present scores
+2. add kmer clustering options: kmer frequency (default) or kmer present scores  
+What's new in Version 1.0.3:  
+1. improve kmer-frequency calculation speed (using parallel)  
 
 ### Required packages:
 `Biostrings` for parsing DNA sequence (fasta format) files  
