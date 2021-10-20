@@ -80,6 +80,8 @@ klustering <- function (repseq, pscore = FALSE, feature.table = NULL, write.fast
                         step = c(5, 10), search.min = NULL, search.max = NULL, cores = 1)
 {
   require(foreach, quietly = T)
+  cl <- parallel::makeCluster(cores)
+  doParallel::registerDoParallel(cl)
   rev_comp <- function(x) {
     x.r <- paste0(rev(strsplit(x, "")[[1]]), collapse = "")
     x.r <- gsub("A", "1", x.r)
@@ -123,18 +125,20 @@ klustering <- function (repseq, pscore = FALSE, feature.table = NULL, write.fast
     }
   }
   else if (!isTRUE(pscore)) {
-    for (j in 1:length(species)) {
-      #print(j)
-      single.forward <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][1]))))
-      single.reverse <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),Biostrings::DNAString(unlist(species[[j]][2]))))
-      tetra.table[, j] <- (single.forward + single.reverse)
-    }
+    tetra.table <- foreach(j=1:length(species),.combine = cbind) %dopar%
+      {
+        single.forward <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),
+                                                                         Biostrings::DNAString(unlist(species[[j]][1]))))
+        single.reverse <- S4Vectors::elementNROWS(Biostrings::matchPDict(Biostrings::PDict(tetra.mer),
+                                                                         Biostrings::DNAString(unlist(species[[j]][2]))))
+        tetras <- (single.forward + single.reverse)
+        tetras
+      }
+    rownames(tetra.table) <- tetra.mer
   }
   colnames(tetra.table) <- asv.id
   tetra.table <- prop.table(tetra.table, 2)
   cos <- as.dist(1 - coop::cosine(tetra.table))
-  cl <- parallel::makeCluster(cores)
-  doParallel::registerDoParallel(cl)
   tree <- hclust(cos)
   if (is.null(search.max))
     search.max <- max(cutree(tree, h = 0.015))
