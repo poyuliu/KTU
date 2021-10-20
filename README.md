@@ -10,7 +10,7 @@ We tested KTU algorithm with an open-access dataset from NCBI SRA. The SRA datas
 The 16S amplicon denoising method unbiased picks high-quality sequence variants but generates a sparse feature table for subsequent multivariate statistical analysis. We introduce a k-mer based re-clustering method for improving the environmental and biological relevancies of ASV based microbiome associated study effectively.
 
 
-**Latest updates:** 2021/10/1  
+**Latest updates:** 2021/10/20  
 What's new in Version 1.0.2:  
 1. correct the algorithm core of kmer-frequency calculation  
 2. add kmer clustering options: kmer frequency (default) or kmer present scores
@@ -34,7 +34,6 @@ install_github("poyuliu/KTU")
 ```
 
 sourcing KTU R library  
-~~source("http://www.lifescipy.net/RcodeDB/FN_KTU.R")~~  
 ```
 library(KTU)
 ```
