@@ -1,5 +1,4 @@
-# KTU
-KTU: K-mer-based taxonomic clustering algorithm improves biological relevance in microbiome associated study
+# KTU: K-mer-based taxonomic clustering algorithm improves biological relevance in microbiome associated study
 
 The 16S rDNA amplicon sequencing is widely implemented for microbiome associated studies. Microbiota feature picking algorithms for taxonomic identification and quantification are greatly renewing in recent years. The amplicon sequence variant (ASV) denoising algorithm of unbiased sequence picking replaces the OTU clustering methods. The ASV features can detect and distinguish the biological variations under the species OTU level (≧97% similarity). However, the quantification of single ASV among sequencing samples are sparse and less prevalent in the same biological groups. Here, we introduce a k-mer based, sequence alignment-free algorithm – “KTU” (K-mer Taxonomic Unit) for re-clustering ASVs into taxonomic units with more biological relevance.
 
@@ -9,152 +8,17 @@ We tested KTU algorithm with an open-access dataset from NCBI SRA. The SRA datas
 
 The 16S amplicon denoising method unbiased picks high-quality sequence variants but generates a sparse feature table for subsequent multivariate statistical analysis. We introduce a k-mer based re-clustering method for improving the environmental and biological relevancies of ASV based microbiome associated study effectively.
 
+##  **More updated information**
+This package has been published in _Methods in Ecology and Evolution_. The updated tutorial (with format description) and example files are available, please find them from the following links:
+https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/2041-210X.13758  
+https://besjournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2F2041-210X.13758&file=mee313758-sup-0001-Supinfo.pdf  
 
-**Latest updates:** 2021/10/20  
-What's new in Version 1.0.2:  
-1. correct the algorithm core of kmer-frequency calculation  
-2. add kmer clustering options: kmer frequency (default) or kmer present scores  
-What's new in Version 1.0.3:  
-1. improve kmer-frequency calculation speed (using parallel)  
+**How to cite the KTU algorithm and paper:**  
+Liu, P.-Y., Yang, S.-H., & Yang, S.-Y. (2022). KTU: K-mer Taxonomic Units improve the biological relevance of amplicon sequence variant microbiota data. _Methods in Ecology and Evolution_, 13, 560– 568. https://doi.org/10.1111/2041-210X.13758
 
-### Required packages:
-`Biostrings` for parsing DNA sequence (fasta format) files  
-`S4Vectors` for calculating k-mer frequency  
-`coop` for measuring cosine similarity of k-mer frequency  
-`cluster` for conducting PAM/K-medoids clustering  
-`parallel` for parallel computing  
-`foreach` for parallel for-loop computing  
-`doParallel` for parallel computing  
-`digest` for generating MD5 hash  
+**Example dataset in the paper: microbiome of sourdough starters**  
+This repository includes a feature table (tab-delimited text file, ASV hash ID in the first column) and representative sequences (fasta format): https://github.com/poyuliu/KTU-validation/tree/main/sourdough
+_Note that the feature table should include the first column with ASV IDs._
 
-
-## Practice  
-install package from github:
-```
-library(devtools)
-install_github("poyuliu/KTU")
-```
-
-sourcing KTU R library  
-```
-library(KTU)
-```
-
-### Step 1 make k-mer DB (optional)  
-Trim full length 16S DB to specific hypervariable regions  
-Example: V3-V4 (341-805)  
-Forward: **CCTACGGGNGGCWGCAG**  
-Reverse: **GACTACHVGGGTATCTAATCC**  
-output file: *SILVA_NR132_trimmed-sequence.fasta*  
-```
-trim.primer("/home/share/SILVA_NR132/SILVA_132_QIIME_release/rep_set/rep_set_16S_only/99/silva_132_99_16S.fna",
-            forseq="CCTACGGGNGGCWGCAG",
-            revseq="GACTACHVGGGTATCTAATCC",
-            output.name="SILVA_NR132")
-```  
-make and output DB
-input: *trimmed fasta file*  
-output: *SILVA_132_V3V4_DB.RDS & SILVA_132_V3V4_TX.RDS*  
-```  
-silva.db <- makektudb(input.fasta = "SILVA_NR132_trimmed-sequence.fasta",
-                   input.taxa = "/home/share/SILVA_NR132/SILVA_132_QIIME_release/taxonomy/16S_only/99/taxonomy_7_levels.txt",
-                   output.file = "SILVA_132_V3V4")
-
-```
-
-### Step 2 run Klustering (main algorithm)  
-import ASV table (output from QIIME2 pipeline + DADA2 denoising + biom conversion) and remove original taxonomy column  
-```
-data <- read.delim("feature-table_w_tax.txt") # import QIIME feature table with taxonomy annotation
-data <- data[,-ncol(data)] # remove taxonomy annotation column
-```  
-*input representive-sequence fasta file*  
-Parameters:  
-  iterative PAM clustering steps: 5 and 10 (default)  
-  CPU cores: 10 (default: 1)  
-```
-kluster <- klustering(repseq = "dna-sequences.fasta",
-                          feature.table = data,
-                          write.fasta = TRUE,step = c(5,10),cores = 10)
-```  
-Save results  
-```
-saveRDS(kluster,file="kluster.RDS")
-```
-
-### Step 3 assign k-mer taxonomy (optional)  
-**similar to RDP-classifier/Naîve Bayesian algorithm**  
-Read k-mer clustering result
-```
-kluster <- readRDS("kluster.RDS")
-```  
-run k-mer taxonomy assignment  
-input DB: {name}_DB.RDS and {name}_TX.RDS  
-input k-mer frequency table from previous result: *kluster$kmer.table*  
-
-```
-k.taxonomy <- kaxonomy(dbRDS = "SILVA_132_V3V4_DB.RDS",
-                      taxaRDS = "SILVA_132_V3V4_TX.RDS",
-                      kmer.table = kluster$kmer.table,
-                      cores = 3)
-```  
-Save results  
-```
-write.table(k.taxonomy,file = "Kaxonomy.tsv",sep="\t")
-```
-
-### Step 4 evaluate Klustering results (optional)  
-Evaluate sequence similarity within KTUs,   
-```
-ktu_eval <- KTUsim.eval(klusterRDS = "kluster.RDS", ASVfasta = "dna-sequences.fasta")
-```
-and visualize by histogram:  
-1. how many ASVs are clustered in to a KTU  
-```
-histNdistri(histdata = ktu_eval$eachmean$n.feature,las=1,breaks=30,
-            coll = colset.d.5[1],
-            xlab.text = "# of ASVs / KTU",
-            legend.posit = "topright",legend.text = paste0(round(mean(ktu_eval$eachmean$n.feature),2)," ASVs/KTU on average"))
-```
-2. mean ASV similarity withing a KTU  
-```
-histNdistri(histdata = ktu_eval$eachmean$similarity.pct,las=1,breaks=30,
-            coll = colset.d.5[2],
-            xlab.text = "% of ASVs within KTU",
-            legend.posit = "topleft",legend.text = paste0("Mean similarity: ",round(ktu_eval$globalmean,2),"%"))
-```
-3. Divergence of ASVs within KTU  
-```
-histNdistri(histdata = ktu_eval$eachmean$divergence[!is.na(ktu_eval$eachmean$divergence)],las=1,breaks=30,
-            coll = colset.d.5[3],
-            xlab.text = "Divergence of ASVs within KTU",
-            legend.posit = "topright",legend.text = paste0("Mean divergence: ",round(ktu_eval$globaldivergence,2)))
-```
-
-## Example
-[_Liu P.-Y., et al._ **Variations in Gut Microbiota of Siberian Flying Squirrels Correspond to Seasonal Phenological Changes in Their Hokkaido Subarctic Forest Ecosystem.** Microbial ecology 78, 223–231 (2019)](https://link.springer.com/article/10.1007/s00248-018-1278-x)
-
-
-<img src="https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs00248-018-1278-x/MediaObjects/248_2018_1278_Fig2_HTML.png?as=webp" width="45%" /> <img src="https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs00248-018-1278-x/MediaObjects/248_2018_1278_Fig3_HTML.png?as=webp" width="45%" />
-
-### Untreated ASV analyses
-<img src="http://www.lifescipy.net/KTU/github/github_pic_01.png" width="60%" />
-<img src="http://www.lifescipy.net/KTU/github/github_pic_02.png" width="60%" />
-<img src="http://www.lifescipy.net/KTU/github/github_pic_03.png" width="60%" />
-
-### KTU analyses
-**Phyla composition**
-<img src="http://www.lifescipy.net/KTU/github/github_pic_04.png" width="60%" />
-
-
-**Beta diversity PCoA**
-<img src="http://www.lifescipy.net/KTU/github/github_pic_05.png" width="60%" />
-
-
-**Environmental factor correlation**
-<img src="http://www.lifescipy.net/KTU/github/github_pic_06.png" width="60%" />
-<img src="http://www.lifescipy.net/KTU/github/github_pic_07.png" width="60%" />
-
-
-**Correlation heatmap**
-<img src="http://www.lifescipy.net/KTU/github/github_pic_08.png" width="60%" />
+**Please find out the tutorial on wiki**  
+https://github.com/poyuliu/KTU/wiki
