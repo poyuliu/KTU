@@ -22,3 +22,6 @@ _Note that the feature table should include the first column with ASV IDs._
 
 **Please find out the tutorial on wiki**  
 https://github.com/poyuliu/KTU/wiki
+
+Many thanks for [@csmiguel](https://github.com/csmiguel) providing codes for a workflow of KTU integration with dada2.  
+https://github.com/poyuliu/KTU/wiki/2.-KTU-integration-with-dada2-workflow
