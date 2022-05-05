@@ -8,7 +8,7 @@ We tested KTU algorithm with an open-access dataset from NCBI SRA. The SRA datas
 
 The 16S amplicon denoising method unbiased picks high-quality sequence variants but generates a sparse feature table for subsequent multivariate statistical analysis. We introduce a k-mer based re-clustering method for improving the environmental and biological relevancies of ASV based microbiome associated study effectively.
 
-<img src="http://www.lifescipy.net/KTU/github/github_pic_00.png" width="60%" />
+<img src="http://www.lifescipy.net/KTU/github/github_pic_00.png" width="100%" />
 
 ##  **More updated information**
 This package has been published in _Methods in Ecology and Evolution_. The updated tutorial (with format description) and example files are available, please find them from the following links:
